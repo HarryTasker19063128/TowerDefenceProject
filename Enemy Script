@@ -1,0 +1,90 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Enemy : MonoBehaviour
+{
+    [SerializeField] private float enemyHealth; // Health the enemy has, can be set in Unity Editor
+    [SerializeField] private float movementSpeed; // Speed the enemy moves at, can be set in Unity Editor
+
+    [SerializeField] private int killReward; // Amount of money player receives when enemy is killed, can be set in Unity Editor
+    [SerializeField] private int damage; // Amount of damage enemy does when reaching the end, can be set in Unity Editor
+
+    private GameObject targetTile; // Tile that the enemy is moving towards.
+    private GameObject player; // Represents player object and allows changes to be made to health etc.
+    private GameObject money; // Represents money object and allows changes to be made to balance etc.
+
+    private void Awake()
+    {
+        Waves.enemies.Add(gameObject);
+        player = GameObject.FindWithTag("Player");
+        money = GameObject.FindWithTag("Money");
+    }
+    
+    private void Start()
+    {
+        initializeEnemy();
+    }
+
+    private void initializeEnemy()
+    {
+        targetTile = SimpleMapGenerator.startTile;
+    }
+
+    public float getHealth()
+    {
+        return enemyHealth;
+    }
+    
+    public void takeDamage(float amount)
+    {
+        enemyHealth -= amount;
+
+        if (enemyHealth <= 0)
+        {
+            die();
+        }
+    }
+
+    private void die()
+    {
+        MoneyManager playerMoney = money.GetComponent<MoneyManager>();
+        playerMoney.addMoney(killReward);
+
+        Waves.enemies.Remove(gameObject);
+        Destroy(transform.gameObject);
+    }
+    
+    private void moveEnemy()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, targetTile.transform.position, movementSpeed * Time.deltaTime);
+    }
+
+    private void checkPosition()
+    {
+        if (targetTile != null) // Check if target tile exists and that it's not the end tile
+        {
+            float distance = (transform.position - targetTile.transform.position).magnitude; // Calculate distance between enemy position and the target position
+
+            if (distance < 0.001f) // Check if distance is less than really small value and if so update the target tile
+            {
+                int currentIndex = SimpleMapGenerator.pathTiles.IndexOf(targetTile);
+                targetTile = SimpleMapGenerator.pathTiles[currentIndex + 1];
+            }
+            if (targetTile == SimpleMapGenerator.finalTile)
+            {
+                PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+                
+                playerHealth.damagePlayer(damage);
+                Waves.enemies.Remove(gameObject);
+                Destroy(transform.gameObject);
+            }
+        }
+    }
+    
+    private void Update()
+    {
+        checkPosition();
+        moveEnemy();
+    }
+}

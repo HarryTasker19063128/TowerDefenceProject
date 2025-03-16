@@ -1,0 +1,43 @@
+using UnityEngine;
+using System.Collections;
+
+public class PauseMenu : MonoBehaviour
+{
+    public static bool PausedGame = false;
+    public GameObject PauseMenuUI;
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            if (PausedGame == true)
+            {
+                Resume();
+            }
+            else
+            {
+                Paused(); 
+            }
+        }
+    }
+
+    public void Resume()
+    {
+        PauseMenuUI.SetActive(false);
+        Time.timeScale = 1f;
+        PausedGame = false;
+    }
+
+    void Paused()
+    {
+        PauseMenuUI.SetActive(true);
+        Time.timeScale = 0f;
+        PausedGame = true;
+    }
+
+    public void Quit()
+    {
+        Application.Quit();
+    }
+}

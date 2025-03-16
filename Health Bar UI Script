@@ -1,0 +1,16 @@
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+public class HealthBarUI : MonoBehaviour 
+{
+    public PlayerHealth playerHealth;
+    public Image healthBar;
+    public TextMeshProUGUI healthAmount;
+
+    public void Update()
+    {
+        healthBar.fillAmount = playerHealth.getCurrentPlayerHealth() / playerHealth.startingHealth;
+        healthAmount.text = Mathf.Floor(playerHealth.getCurrentPlayerHealth()) + "/" + playerHealth.startingHealth;
+    }
+}

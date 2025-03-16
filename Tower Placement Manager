@@ -1,0 +1,139 @@
+using UnityEngine;
+
+public class TowerPlacementManager : MonoBehaviour
+{
+    // Imports both the towerObject to be placed (contains price of the tower), as well as the shopManager (to remove funds from player).
+    public GameObject towerObject;
+    public ShopManager shopManager;
+
+    private GameObject currentTowerPlacement; // Current tower to place.
+    private GameObject ghostPlacement; // GameObject that's the preview of the tower to place.
+    private GameObject hoverTile; // Tile that the mouse is currently hovering over.
+
+    public Camera cam; // Reference to camera in scene.
+
+    public LayerMask tileOccupied; // LayerMask to detect valid tower placement tiles
+    public LayerMask towerOccupied; // LayerMask to detect existing towers
+    public bool isBuilding; // Boolean that checks whether the player is trying to build a new tower or not.
+
+    public void Start()
+    {
+        
+    }
+
+    // gets the current position of the user's mouse
+    public Vector2 getMousePlacement()
+    {
+        return cam.ScreenToWorldPoint(Input.mousePosition);
+    }
+
+    // Detects which tile the player is currently hovering over. Updates the hoverTile if it's valid.
+    public void getCurrentHoverTile()
+    {
+        Vector2 playerMousePosition = getMousePlacement();
+        RaycastHit2D mouse = Physics2D.Raycast(playerMousePosition, new Vector2(0, 0), 0.1f, tileOccupied, -100, 100); // Casts a short ray that will collide with the box colliders on the mapTiles.
+
+        if (mouse.collider != null)
+        {
+            // Check to see if the selected tile is a mapTile
+            if (SimpleMapGenerator.mapTiles.Contains(mouse.collider.gameObject))
+            {
+                // Checks to see if the selected tile is NOT a pathTile
+                if (!SimpleMapGenerator.pathTiles.Contains(mouse.collider.gameObject)) 
+                {
+                    hoverTile = mouse.collider.gameObject; // Sets hoverTile
+                }
+            }
+        }
+    }
+
+    // Checks to see if there's already a tower on the selected tile.
+    public bool isOccupiedByTower()
+    {
+        bool towerOnTile = false; // Initialise towerOnTile as false
+
+        Vector2 mousePosition = getMousePlacement(); // Check to see if tile is valid
+        RaycastHit2D mouse = Physics2D.Raycast(mousePosition, new Vector2(0, 0), 0.1f, towerOccupied, -100, 100); // Cast a short ray and see if it's occupied by a tower.
+
+        if (mouse.collider != null)
+        {
+            towerOnTile = true; // Tower is on current tile, so tower can't be placed.
+        }
+
+        return towerOnTile; // Return result of check
+    }
+
+    public void placeBuilding()
+    {
+        if (hoverTile != null)
+        {
+            if (isOccupiedByTower() == false && shopManager.canAffordTower(currentTowerPlacement) == true) // If the current tile the player is hovering over is free and the player can afford the tower.
+            {
+                GameObject newTowerObject = Instantiate(currentTowerPlacement); // Create new GameObject that matches the tower type in which the player selected.
+                newTowerObject.layer = LayerMask.NameToLayer("Tower"); // Change the layer type of the new GameObject to "Tower".
+                newTowerObject.transform.position = hoverTile.transform.position; // Change the position of the new Tower object to be where the hoverTile is.
+
+                endBuilding(); // Stops the building mode and puts the player back in the normal game.
+                shopManager.buyTower(currentTowerPlacement); // Deduct the cost of the tower from the player.
+            }
+            else
+            {
+                Debug.Log("Not enough money! Cannot afford selected tower!");
+            }
+        }
+    }
+
+    /* Function that's called when the player presses build on a tower in the UI. Serves the purpose of providing a "ghost" of the tower so the player can see where the tower will be placed. Takes in the
+     * type of tower to be built as a parameter.
+     */
+    public void startBuilding(GameObject towerToBuild)
+    {
+        isBuilding = true;
+
+        currentTowerPlacement = towerToBuild; // Sets the current tower to be built to the one selected by the player.
+        ghostPlacement = Instantiate(currentTowerPlacement); // Create a sillhouette of the tower to be placed.
+
+        // Destroys both the Tower and BarrelRotation scripts within the ghostPlacement so that it's just a "ghost" of the tower rather than an actual functioning tower.
+        if (ghostPlacement.GetComponent<Tower>() != null)
+        {
+            Destroy(ghostPlacement.GetComponent<Tower>());
+        }
+        if (ghostPlacement.GetComponent<BarrelRotation>() != null)
+        {
+            Destroy(ghostPlacement.GetComponent<BarrelRotation>());
+        }
+    }
+
+    // Function that removes the ghostPlacement object from the scene.
+    public void endBuilding()
+    {
+        isBuilding = false;
+
+        if (ghostPlacement != null)
+        {
+            Destroy(ghostPlacement);
+        }
+    }
+
+    public void Update()
+    {
+        if (isBuilding == true)
+        {
+            if (ghostPlacement != null)
+            {
+                getCurrentHoverTile();
+
+                // ensures that if hovering over a path tile an error will not be returned
+                if (hoverTile != null)
+                {
+                    ghostPlacement.transform.position = hoverTile.transform.position;
+                }
+            }
+            // If the user presses mouse 1 ("Fire1"), place a tower on the same position as the hoverTile.
+            if (Input.GetButtonDown("Fire1"))
+            {
+                placeBuilding();
+            }
+        }
+    }
+}

@@ -1,0 +1,164 @@
+using System.Collections;
+using System.Runtime.CompilerServices;
+using TMPro;
+using UnityEngine;
+
+public class RoundController : MonoBehaviour
+{
+    // Collection of all different types of enemy in the game.
+    public GameObject basicEnemy;
+    public GameObject fastEnemy;
+    public GameObject hardEnemy;
+    public GameObject bossEnemy;
+
+    // UI elements for the Round logic.
+    public TextMeshProUGUI roundCounter;
+    public TextMeshProUGUI enemiesRemaining;
+
+    // Floats that contain the amount of time before, between and timer for the rounds.
+    public float timeBeforeRoundStarts;
+    public float timeBetweenWaves;
+    public float timeVariable;
+
+    // Different boolean values that keep track of what the current round state is.
+    public bool isStartOfRound;
+    public bool isRoundOngoing;
+    public bool isIntermission;
+
+    public int round; // Integer containing the current round number.
+    private int bossModifier; // Incremental int that increases every ten waves and controls how many bosses spawn in.
+    private int hardModifier; // Incremental int that increases every three waves and controls how many "hardened" enemies spawn in.
+    private bool fastModifier; // Boolean value that once reaching round five becomes true and controls whether "fast" enemies spawn in.
+
+    /* 
+    * When the round controller starts I set the values for the round state, initialise the round counter, 
+    * modifiers for boss and hard enemies, and apply the intermission before the start of a round
+    */
+    private void Start()
+    { 
+        isRoundOngoing = false;
+        isIntermission = false;
+        isStartOfRound = true;
+
+        timeVariable = Time.time + timeBeforeRoundStarts;
+        round = 1;
+        bossModifier = 1;
+        hardModifier = 2;
+        fastModifier = false;
+    }
+
+    // Function that begins spawning enemies in once a round has started by calling on the Coroutine "EnemySpawner".
+    private void spawnEnemies()
+    {
+        StartCoroutine("EnemySpawner"); 
+    }
+
+    /* 
+    * I used an enumerator over the typical private void, as IEnumerators run based off of the timing given to them, 
+    * rather than private void which is instant, this ensures that all the enemies arent spawned in, in one big group.
+    */
+    IEnumerator EnemySpawner() 
+    {
+        // Starting rounds begin easier without faster enemy type
+        if (fastModifier == false)
+        {
+            for (int i = 0; i < round + 2; i++) // +2 to allow more enemies to spawn each wave
+            {
+                GameObject newEnemy = Instantiate(basicEnemy, SimpleMapGenerator.startTile.transform.position, Quaternion.identity); 
+                yield return new WaitForSeconds(1f); // Wait 1 second before spawning in another enemy.
+
+                // Check to see if round is equal to five and if so, fast enemy type can begin spawning
+                if (round == 5)
+                {
+                    fastModifier = true;
+                }
+            }
+        }
+
+        // Rounds begin spawning with new faster enemy type
+        if (fastModifier == true)
+        {
+            int fastSpawn = 0; // Set the amount of fast enemies to 0.
+
+            for (int i = 0; i < round + 2; i++) // +2 to allow more enemies to spawn each wave
+            {
+                GameObject newEnemy = Instantiate(basicEnemy, SimpleMapGenerator.startTile.transform.position, Quaternion.identity);
+
+                if (fastSpawn % 2 == 0) // % 2 ensures that every other enemy spawned in is a fast enemy 
+                {
+                    GameObject newFastEnemy = Instantiate(fastEnemy, SimpleMapGenerator.startTile.transform.position, Quaternion.identity);
+                }
+                yield return new WaitForSeconds(1f);
+            }
+        }
+
+        // Check to see if current wave is elegible for a hardened enemy wave (every 3 rounds)
+        if (round % 3 == 0)
+        {
+            for (int h = 0; h < hardModifier; h++)
+            {
+                GameObject newHardenedEnemy = Instantiate(hardEnemy, SimpleMapGenerator.startTile.transform.position, Quaternion.identity);
+                yield return new WaitForSeconds(3f);
+            }
+            hardModifier += 2;
+        }
+
+        // Check to see if current wave is elegible for a boss wave (every 10 rounds)
+        if (round % 10 == 0)
+        {
+            for (int m = 0; m < bossModifier; m++)
+            {
+                GameObject newBoss = Instantiate(bossEnemy, SimpleMapGenerator.startTile.transform.position, Quaternion.identity);
+                yield return new WaitForSeconds(5f);
+            }
+            bossModifier += 1;
+        }
+    }
+
+    // Update handles all of the round behaviour and keeps track of what the current round state is
+    private void Update()
+    {
+        // Sets the UI text to show the current round and the amount of enemies remaining.
+        roundCounter.text = "Round: " + round;
+        enemiesRemaining.text = "Enemies Remaining: " + Waves.enemies.Count;
+
+        if (isStartOfRound) // Very first round in the game
+        {
+            if (Time.time >= timeVariable) // Checks if current time is >= to the designated time before each round
+            {
+                isStartOfRound = false;
+                isRoundOngoing = true;
+
+                spawnEnemies();
+                return;
+            }
+        }
+        else if (isIntermission) // Time between each round
+        {
+            if (Time.time >= timeVariable)
+            {
+                isIntermission = false;
+                isRoundOngoing = true;
+
+                spawnEnemies();
+                return;
+            }
+        }
+        else if (isRoundOngoing) // Subsequent rounds
+        {
+            if (Waves.enemies.Count > 0) // If enemies are still present, then round is still ongoing
+            {
+
+            }
+            else
+            {
+                isIntermission = true;
+                isRoundOngoing = false;
+
+                timeVariable = Time.time + timeBetweenWaves;
+                round += 1;
+                return;
+            }
+        }
+    }
+}

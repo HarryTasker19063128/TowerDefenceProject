@@ -1,0 +1,22 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+public class TowerPlacementManager : MonoBehaviour
+{
+    public GameObject basicTowerObject;
+    private GameObject testPlacement;
+
+    public Camera cam;
+
+    public Vector2 getMousePlacement()
+    {
+        return cam.ScreenToWorldPoint(Input.mousePosition);
+    }
+
+    public void Update()
+    {
+        Debug.Log(getMousePlacement());
+    }
+}

@@ -1,0 +1,63 @@
+using UnityEngine;
+
+public class ShopManager : MonoBehaviour
+{
+    public MoneyManager moneyManager; // Inherits the MoneyManager object so it can deduct funds from the player.
+
+    // Collection of all the different types of towers that can be purchased from the shop.
+    public GameObject basicTowerPrefab;
+    public GameObject autoTowerPrefab;
+    public GameObject energyTowerPrefab;
+    public GameObject heavyTowerPrefab;
+
+    // Collection of all the costs for each of the towers.
+    public int basicTowerCost;
+    public int autoTowerCost;
+    public int energyTowerCost;
+    public int heavyTowerCost;
+
+    // Function that handles obtaining the cost of each of the towers.
+    public int getTowerCost(GameObject towerPrefab)
+    {
+        int cost = 0;
+
+        if (towerPrefab == basicTowerPrefab)
+        {
+            cost = basicTowerCost;
+        }
+        if (towerPrefab == autoTowerPrefab)
+        {
+            cost = autoTowerCost;
+        }
+        if (towerPrefab == energyTowerPrefab)
+        {
+            cost = energyTowerCost;
+        }
+        if (towerPrefab == heavyTowerPrefab)
+        {
+            cost = heavyTowerCost;
+        }
+
+        return cost;
+    }
+
+    // Function that checks to see whether the player (MoneyManager) has enough funds to purchase a tower, returning true or false.
+    public bool canAffordTower(GameObject towerPrefab)
+    {
+        int cost = getTowerCost(towerPrefab);
+        bool canAfford = false;
+
+        if (moneyManager.getCurrentMoney() >= cost)
+        {
+            canAfford = true;
+        }
+
+        return canAfford;
+    }
+
+    // Function that handles the deduction of funds from the players balance (calls upon removeMoney from MoneyManager).
+    public void buyTower(GameObject towerPrefab)
+    {
+        moneyManager.removeMoney(getTowerCost(towerPrefab));
+    }
+}

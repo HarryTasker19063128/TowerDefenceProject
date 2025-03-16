@@ -1,0 +1,46 @@
+using UnityEngine;
+using System.Collections;
+
+public class AutoTower : Tower
+{
+    public Transform pivot;
+    public Transform autoBarrelOne;
+    public Transform autoBarrelTwo;
+
+    public GameObject bullet; // Reference to bullet object
+
+    private bool useFirstBarrel = true;
+
+    protected override void shoot()
+    {
+        StartCoroutine(ShootCoroutine());
+    }
+
+    // IEnumerator was used to allow
+    private IEnumerator ShootCoroutine()
+    {
+        if (useFirstBarrel == true)
+        {
+            GameObject newBullet = Instantiate(bullet, autoBarrelOne.position, pivot.rotation);
+            Bullet bulletScript = newBullet.GetComponent<Bullet>();
+
+            if (bulletScript != null)
+            {
+                bulletScript.damage = damage; // Pass tower's damage to the bullet
+            }
+            useFirstBarrel = false;
+        }
+        else
+        {
+            GameObject newBullet = Instantiate(bullet, autoBarrelTwo.position, pivot.rotation);
+            Bullet bulletScript = newBullet.GetComponent<Bullet>();
+
+            if (bulletScript != null)
+            {
+                bulletScript.damage = damage; // Pass tower's damage to the bullet
+            }
+            useFirstBarrel = true;
+        }
+        yield return new WaitForSeconds(0.5f); // Delay before the next shot
+    }
+}

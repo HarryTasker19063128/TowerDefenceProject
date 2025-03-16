@@ -1,0 +1,40 @@
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class PlayerHealth : MonoBehaviour
+{
+    [SerializeField] private float currentPlayerHealth;
+    public float startingHealth;
+
+    public void Start()
+    {
+        resetPlayerHealth();
+    }
+
+    public void resetPlayerHealth()
+    {
+        currentPlayerHealth = startingHealth;
+    }
+
+    public void damagePlayer(float amnt)
+    {
+        currentPlayerHealth -= amnt;
+
+        if (currentPlayerHealth <= 0)
+        {
+            currentPlayerHealth = 0;
+            gameOver();
+        }
+    }
+
+    public float getCurrentPlayerHealth()
+    {
+        return currentPlayerHealth;
+    }
+
+    private void gameOver()
+    {
+        Debug.Log("Game Over!");
+        SceneManager.LoadScene("GameOverScreen");
+    }
+}

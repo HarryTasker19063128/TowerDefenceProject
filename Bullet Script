@@ -1,0 +1,28 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Bullet : MonoBehaviour
+{
+    public float damage;
+
+    private void Start() // Destroys Bullet after 10 seconds if it doesn't hit something
+    {
+        Destroy(gameObject, 10f);
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision) // When the projectile enters a 2D collision.
+    {
+        Enemy enemyScript = collision.gameObject.GetComponent<Enemy>(); // Obtain the enemyScript from the GameObject the bullet collided with.
+        enemyScript.takeDamage(damage); // Remove the set amount of damage from the enemy.
+
+        // Added to make sure that damage is taken from the enemies when the projectile hits
+        Debug.Log("Enemy Took " + damage + " damage, now at " + enemyScript.getHealth());
+        Destroy(gameObject);
+    }
+
+    private void Update()
+    {
+        transform.position += transform.right * 0.090f; // Speed of bullet
+    }
+}

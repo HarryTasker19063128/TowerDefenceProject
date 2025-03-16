@@ -1,0 +1,74 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+// Foundation of all tower scripts.
+public class Tower : MonoBehaviour
+{
+    [SerializeField] private float range;
+    [SerializeField] protected float damage;
+    [SerializeField] private float fireRate; // Time in seconds between shots
+
+    private float timeBetweenShots;
+    public GameObject currentTarget;
+
+    private void Start()
+    {
+        timeBetweenShots = Time.time; // returns time in seconds since start of the game
+    }
+
+    private void updateNearestEnemy()
+    {
+        GameObject nearestEnemy = null; // Create a new GameObject for the nearestEnemy and set it to be empty.
+        float distance = Mathf.Infinity; // Initialises a new variable called distance that has an infinite range, this will be compared to any calculated distance.
+
+        foreach (GameObject enemy in Waves.enemies)
+        {
+            if (enemy != null)
+            {
+                // Calculate the distance by taking the position of both the turret and the enemy.
+                float _distance = Vector3.Distance(transform.position, enemy.transform.position);
+
+                // If the enemy being checked is closer than the previous enemy checked, set it to be the nearestEnemy.
+                if (_distance < distance)
+                {
+                    distance = _distance; // distance = the latest calculated distance.
+                    nearestEnemy = enemy; // nearestEnemy = current enemy being checked.
+                }
+            }
+
+            // After checking nearestEnemy, check to see whether it's within the tower's range.
+            if (distance <= range)
+            {
+                currentTarget = nearestEnemy;
+            }
+            else
+            {
+                currentTarget = null;
+            }
+        }
+    }
+
+    protected virtual void shoot()
+    {
+        // Redundant code
+        // Enemy enemyScript = currentTarget.GetComponent<Enemy>();
+        // enemyScript.takeDamage(damage);
+    }
+
+    private void Update()
+    {
+        // Check to see if the nearestEnemy has changed.
+        updateNearestEnemy();
+
+        // If the tower can take another shot depending on its fire rate.
+        if (Time.time >= timeBetweenShots)
+        {
+            if (currentTarget != null)
+            {
+                shoot(); // Call upon the shoot function to attack the nearestEnemy.
+                timeBetweenShots = Time.time + fireRate; // Update the cooldown for when the shoot function can be called again.
+            }
+        }
+    }
+}

@@ -1,0 +1,35 @@
+using UnityEngine;
+
+public class EnergyProjectile : MonoBehaviour
+{
+    public int collisionAmount;
+    public float damage;
+    private int collisions;
+    
+    private void Start() 
+    {
+        collisions = 0; // Sets collisions to a value of 0.
+        Destroy(gameObject, 10f); // Destroys Bullet after 10 seconds if it doesn't hit something.
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision) // When the projectile enters a 2D collision.
+    {
+        collisions += 1; // Increment the collisions variable by 1.
+        Enemy enemyScript = collision.gameObject.GetComponent<Enemy>(); // Obtain the enemyScript from the GameObject the bullet collided with.
+        enemyScript.takeDamage(damage); // Remove the set amount of damage from the enemy.
+
+        // Added to make sure that damage is taken from the enemies when the projectile hits
+        Debug.Log("Enemy Took " + damage + " damage, now at " + enemyScript.getHealth());
+
+        // Once the energy projectile has collided with 5 or more enemies it will then destroy itself
+        if (collisions >= collisionAmount)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void Update()
+    {
+        transform.position += transform.right * 0.090f; // Speed of projectile
+    }
+}

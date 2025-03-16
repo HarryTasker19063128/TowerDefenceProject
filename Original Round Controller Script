@@ -1,0 +1,83 @@
+using System.Collections;
+using System.Runtime.CompilerServices;
+using UnityEngine;
+
+public class RoundController : MonoBehaviour
+{
+    public GameObject basicEnemy;
+
+    public float timeBeforeRoundStarts;
+    public float timeBetweenWaves;
+    public float timeVariable;
+
+    public bool isStartOfRound;
+    public bool isRoundOngoing;
+    public bool isIntermission;
+
+    public int round;
+
+    private void Start()
+    {
+        isRoundOngoing = false;
+        isIntermission = false;
+        isStartOfRound = true;
+
+        timeVariable = Time.time + timeBeforeRoundStarts;
+        round = 1;
+    }
+
+    private void spawnEnemies()
+    {
+        StartCoroutine("EnemySpawner");
+    }
+
+    // Used over private void, as IEnumerators run based off of the timing given to them, rather than private void which is instant
+    IEnumerator EnemySpawner() 
+    {
+        for(int i = 0; i < round; i++)
+        {
+            GameObject newEnemy = Instantiate(basicEnemy, SimpleMapGenerator.startTile.transform.position, Quaternion.identity);
+            yield return new WaitForSeconds(1f); // Wait 1 second before spawning in another enemy
+        }
+    }
+
+    private void Update()
+    {
+        if (isStartOfRound)
+        {
+            if (Time.time >= timeVariable) // Checks if current time is >= to the designated time before each round
+            {
+                isStartOfRound = false;
+                isRoundOngoing = true;
+
+                spawnEnemies();
+                return;
+            }
+        }
+        else if (isIntermission)
+        {
+            if (Time.time >= timeVariable)
+            {
+                isIntermission = false;
+                isRoundOngoing = true;
+
+                spawnEnemies();
+            }
+        }
+        else if (isRoundOngoing)
+        {
+            if (0 > 1) // Placeholder for now, will check enemies remaining 
+            {
+
+            }
+            else
+            {
+                isIntermission = true;
+                isRoundOngoing = false;
+
+                timeVariable = Time.time + timeBetweenWaves;
+                round += 1;
+            }
+        }
+    }
+}

@@ -1,0 +1,13 @@
+using UnityEngine;
+using TMPro;
+
+public class MoneyTextUI : MonoBehaviour
+{
+    public MoneyManager moneyManager;
+    public TextMeshProUGUI moneyText;
+
+    public void Update()
+    {
+        moneyText.text = "$: " + moneyManager.getCurrentMoney();
+    }
+}

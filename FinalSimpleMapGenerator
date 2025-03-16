@@ -1,0 +1,283 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+/* 
+ * Map generation script
+ */
+public class SimpleMapGenerator : MonoBehaviour
+{
+    public GameObject mapTile; // The main GameObject used by the script, the mapTile is given a prefab (in this case a 2D square) to use when creating the grid.
+
+    [SerializeField] private int mapWidth; // X Axis of the map, is serialized to allow for modification of the variable directly through the Unity Editor.
+    [SerializeField] private int mapHeight; // Y Axis of the map, is serialized to allow for modification of the variable directly through the Unity Editor.
+    [SerializeField] private int maxSteps; // Max amount of steps that can be taken by the random walk algorithm, is also serialized to allow for editing in the Unity Editor
+
+    // Begin by creating two lists to contain both the mapTiles (Ones for towers to be placed on) and pathTIles (Ones for enemies to traverse).
+    public static List<GameObject> mapTiles = new List<GameObject>(); 
+    public static List<GameObject> pathTiles = new List<GameObject>();
+
+    // StartTile (Tile where enemies "spawn" in from) and finalTile (Destination of the enemies) are then created as gameObjects as they are represented by the same prefabs.
+    public static GameObject startTile;
+    public static GameObject finalTile;
+
+    // Two Spirte objects are created to allow for different images to be used to represent both the mapTiles and pathTiles.
+    private Sprite[] grassTiles;
+    private Sprite[] path;
+
+    private GameObject currentTile; // The tile we're currently on.
+
+    // Two Colour objects are then created to allow for different colours to be applied to the start and end tiles respectively, this ensures that the user can differentiate them.
+    public Color startColour;
+    public Color finalColour;
+
+    private void Start()
+    {
+        // At runtime, start by loading all of the image files from the "Resources" folder, so that they can be applied to the mapTiles when they're created.
+        grassTiles = Resources.LoadAll<Sprite>("GrassTiles");
+        path = Resources.LoadAll<Sprite>("PathTiles");
+
+        // Error check just to ensure that if there are no files found within the "grassTiles" folder then an error is displayed to the console.
+        if (grassTiles.Length == 0)
+        {
+            Debug.Log("Error: No Textures found in GrassTiles");
+            return;
+        }
+
+        // Call on the GenerateMap() Function.
+        GenerateMap();
+    }
+
+    /* GetTopTiles is responsible for adding each of the GameObject tiles along the top of the grid based map to a new list created called edgeTiles
+     * the function works by taking the first index of the tile in the top row, this being mapWidth * (mapHeight-1) and while it's less then the total of all
+     * of the tiles (mapWidth * mapHeight). This is due to the fact that the tile placed in the top right corner of the map is the last tile placed. The purpose
+     * of this is to find a position for the startTile to be placed.
+     */
+    private List<GameObject> GetTopTiles()
+    {
+        List<GameObject> edgeTiles = new List<GameObject>();
+
+        for (int i = mapWidth * (mapHeight - 1); i < mapWidth * mapHeight; i++)
+        {
+            edgeTiles.Add(mapTiles[i]);
+        }
+
+        return edgeTiles;
+    }
+
+    /* GetBottomEdgeTiles is much like GetTopTiles, except it gets all of the tiles found on the bottom row of the map. The for loop is much simpler as it
+     * starts on the first tile placed and ends after reaching 1 width of the map. The purpose of this is to find a position for the finalTile to be placed.
+     */
+    private List<GameObject> GetBottomTiles()
+    {
+        List<GameObject> edgeTiles = new List<GameObject>();
+
+        for (int i = 0; i < mapWidth; i++)
+        {
+            edgeTiles.Add(mapTiles[i]);
+        }
+
+        return edgeTiles;
+    }
+
+    /* The following section in the code outlines the different ways in which the path generation script can move through the map to create a path. It purely handles
+    *  the logic for moving itself through the map, keeping track of the current tile (GameObject) it's on and adding it to the list of pathTiles before then carrying
+    *  out the move that the function is responsible for.
+    */
+
+    /* MoveDown handles, as the name implies, moving down the grid based map. It begins by adding the tile GameObject it's currently on to the pathTiles list. It then
+    *  updates the currentIndex (the position of the current tile in the list of mapTiles) before updating the currentTile to be the currentIndex - the mapWidth, which
+    *  is one row less than the current position, which is one down from the current position on the map.
+    */
+    private void MoveDown()
+    {
+        pathTiles.Add(currentTile);
+        int currentIndex = mapTiles.IndexOf(currentTile);
+        currentTile = mapTiles[currentIndex - mapWidth];
+    }
+    
+    /* MoveLeft handles moving to the left and works the same as MoveDown but after adding currentTile to pathTiles and finding the currentIndex of the tile its on, the
+     * function removes 1 from the currentIndex as it moves down the X axis of the map.
+     */
+    private void MoveLeft()
+    {
+        pathTiles.Add(currentTile);
+        int currentIndex = mapTiles.IndexOf(currentTile);
+        currentTile = mapTiles[currentIndex - 1];
+    }
+    /* Finally MoveRight handles moving to the right and works the same as both MoveDown and left, except instead of removing 1 from the currentIndex like MoveLeft, it
+     * instead adds 1 to the currentIndex allowing it to move up the X axis. An additional comment is that I did not include an MoveUp function as in testing it complicated
+     * the mapGeneration massively as it led to the code producing loops and other undesirable layouts.
+     */
+    private void MoveRight()
+    {
+        pathTiles.Add(currentTile);
+        int currentIndex = mapTiles.IndexOf(currentTile);
+        currentTile = mapTiles[currentIndex + 1];
+    }
+
+    /* GenerateMap is the primary driver function of the script, it handles the creation of the grid based map used in the game, as well calling upon the CreatePath() function
+    *  later on to handle the creation of the actual path enemies will traverse.
+    */
+    private void GenerateMap()
+    {
+        // The two for loops handle the generation of the map along the X and Y axis until it creates a full grid map for the game to be able to use.
+        for (int y = 0; y < mapHeight; y++)
+        {
+            for (int x = 0; x < mapWidth; x++)
+            {
+                GameObject newTile = Instantiate(mapTile); // Instantiate (Create) a new mapTile using the GameObject mapTile.
+
+                Sprite randomGrass = grassTiles[Random.Range(0, grassTiles.Length)]; // Select a random sprite / image found within the Resources/grassTiles folder.
+                newTile.GetComponent<SpriteRenderer>().sprite = randomGrass; // Set the newTiles sprite / image to be that of the randomly selected image from Resources.
+
+                mapTiles.Add(newTile); // Add the newTile  to the list of mapTiles.
+                newTile.transform.position = new Vector2(x, y); // Move the new mapTile to the correct position according to the X and Y axis
+            }
+        }
+
+        // The code then calls upon GetTopTiles and GetBottomTiles prior to setting the start and final tiles.
+        List<GameObject> topTiles = GetTopTiles();
+        List<GameObject> bottomTiles = GetBottomTiles();
+
+        // The start and final tiles are then assigned a random position using the mapWidth as the range.
+        startTile = topTiles[Random.Range(0, mapWidth)];
+        finalTile = bottomTiles[Random.Range(0, mapWidth)];
+
+        // CurrentTile is initialized as the startTile as that's where the path will move out from.
+        currentTile = startTile;
+
+        // CreatePath is then called upon to handle the creation of the path the enemy will traverse.
+        CreatePath();
+
+        // A ForEach loop is then used to loop through the GameObjects found within the pathTiles list. 
+        foreach (GameObject obj in pathTiles)
+        {
+            Sprite randomPath = path[Random.Range(0, path.Length)]; // Selects a random sprite / image in the Resources/path folder.
+            obj.GetComponent<SpriteRenderer>().sprite = randomPath; // Applies the random sprite / image to the GameObject.
+        }
+
+        // Change the colours of both the start and final tiles so that they're more noticeable.
+        startTile.GetComponent<SpriteRenderer>().color = startColour;
+        finalTile.GetComponent<SpriteRenderer>().color = finalColour;
+    }
+
+    private bool reachedX = false; // Boolean value that represents whether the algorithm has alligned itself with the X axis.
+    private bool reachedY = false; // Boolean value that represents whether the algorithm has alligned itself with the Y axis.
+    private int loopCount = 0; // Counter variable that keeps track of how many loops the algorithm takes to find the goal, used to prevent infinite loops.
+
+    /* CreatePath is the function responsible for creating the actual path used by the game. So far the GenerateMap algorithm has handled the creation of the shell
+     * of the map, with it being just a grid of mapTiles and only two pathTiles, these being the startTile and finalTile. CreatePath has the purpose of filling in the
+     * gap between these two points and is split into two halves. The first part of the function carries out a RandomWalk algorithm for a pre-defined amount of steps
+     * with a set of rules in which it must follow when taking steps. After taking the set amount of steps it then transitions to a completely rule based pathfinding
+     * algorithm that focuses on first alligning the X axis and then the Y axis allowing the path to be completely generated. This provides the best balance of random
+     * generation, whilst ensuring that the map created is useable.
+     */
+    private void CreatePath()
+    {
+        string lastMove = ""; // lastMove represents the last move that was taken by the randomWalk algorithm. It ensures that the algorithm cannot walk back on itself.
+        int stepsTaken = 0; // stepsTaken keeps track of the amount of steps that have been taken by the randomWalk algorithm, ensuring it only takes the set amount.
+        MoveDown(); // MoveDown is initially called to ensure that the path does not generate from the startTile to prevent the path running across the edges of the map.
+
+        // While loop for the Random Walk algorithm
+        while (stepsTaken < maxSteps)
+        {
+            List<string> possibleMoves = new List<string>(); // Create a new list that contains all the possible moves that the algorithm can make to be used later.
+
+            // The following conditional statements check to see which moves can be made.
+            
+            // If the code did not previously move to the right and the tile's X coordinate is greater than 0 (Prevents the algorithm from stepping outside of the grid).
+            if (lastMove != "Right" && currentTile.transform.position.x > 0) 
+            {
+                possibleMoves.Add("Left"); // Add "Left" as a possible move that can be made.
+            }
+            // If the code did not previously move to the left and the tile's X coordinate is less than mapWidth - 1 (the edge of the map).
+            if (lastMove != "Left" && currentTile.transform.position.x < mapWidth - 1)
+            {
+                possibleMoves.Add("Right"); // Add "Right" as a possible move that can be made.
+            }
+            // If the code did not previously move down and the tile's Y coordinate is greater than 0 (the bottom of the map).
+            if (lastMove != "Down" && currentTile.transform.position.y > 0)
+            {
+                possibleMoves.Add("Down"); // Add "Down" as a possible move that can be made.
+            }
+
+            string chosenMove = possibleMoves[Random.Range(0, possibleMoves.Count)]; // From the list of possible moves that has been created, pick a random move.
+
+            switch (chosenMove) // Depending on the chosen case a different action is carried out.
+            {
+                case "Down": // if "Down" then move down twice (To create a gap between the path tiles) and set the last move to be down.
+                    MoveDown();
+                    MoveDown();
+                    lastMove = "Down";
+                    break;
+                case "Left": // if "Left" then move to the left once and set the last move to be left.
+                    MoveLeft();
+                    lastMove = "Left";
+                    break;
+                case "Right": // if "Right" then move to the right once and set the last move to be right.
+                    MoveRight();
+                    lastMove = "Right";
+                    break;
+            }
+
+            stepsTaken++; // Increment stepsTaken before going over the loop again.
+        }
+
+        // Once all steps have been taken, transition across to the goal directed pathfinding phase
+        // Move down twice to create a gap between the randomly generated map, this prevents the path going back on itself.
+        MoveDown(); 
+        MoveDown();
+        
+        // While the currentTile's X axis is not equal to the finalTile's X axis, carry out the following.
+        while (reachedX == false) 
+        {
+            loopCount++; // Increment the loop counter
+            if (loopCount >= 100) // Error handling: If loops more than 100 times then break out.
+            {
+                Debug.Log("Broke out of while loop!");
+                break;
+            }
+            // If the X axis of current tile is greater than the X axis of finalTile, it's too far to the right and must move left to correct.
+            if (currentTile.transform.position.x > finalTile.transform.position.x) 
+            {
+                MoveLeft();
+            }
+            // If the X axis of current tile is less than the X axis of finalTile, it's too far to the left and must move right to correct.
+            else if (currentTile.transform.position.x < finalTile.transform.position.x)
+            {
+                MoveRight();
+            }
+            // If neither is true, it means that the X axis of current tile is equal to finalTile.
+            else
+            {
+                reachedX = true;
+            }
+        }
+        // While the currentTile's Y axis is not equal to the finalTile's Y axis, carry out the following.
+        while (reachedY == false)
+        {
+            // if the Y axis of current tile is greater than the Y axis of finalTile, it's above the finalTile and must move down to correct.
+            if (currentTile.transform.position.y > finalTile.transform.position.y)
+            {
+                MoveDown();
+            }
+            // If not true then the currentTile is equal to the finalTile.
+            else
+            {
+                reachedY = true;
+            }
+        }
+
+        // After creating the path, the code then adds the finalTile to the list of pathTiles.
+        pathTiles.Add(finalTile);
+
+        // A ForEach loop is then used to loop through the GameObjects found within the pathTiles list. 
+        foreach (GameObject obj in pathTiles)
+        {
+            Sprite randomPath = path[Random.Range(0, path.Length)]; // Selects a random sprite / image in the Resources/path folder.
+            obj.GetComponent<SpriteRenderer>().sprite = randomPath; // Applies the random sprite / image to the GameObject.
+        }
+
+    }
+}

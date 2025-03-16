@@ -1,0 +1,38 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class BarrelRotation : MonoBehaviour
+{
+    // Pivot point for the barrel (base of turret).
+    public Transform pivot;
+
+    // Barrel of the turret that rotates to aim at target.
+    public Transform barrel;
+
+    // Reference to Tower script, called upon as it stores information regarding the turret.
+    public Tower tower;
+
+    private void Update()
+    {
+        // Check to see if tower exists.
+        if (tower != null)
+        {
+            // Check to see if the tower has a target to aim towards.
+            if (tower.currentTarget != null)
+            {
+                // Calculate the direction from the pivot point to the currentTarget. Vector2 used as we only need X and Y values.
+                Vector2 direction = tower.currentTarget.transform.position - pivot.position;
+
+                // use Mathf.Atan2 to determine the angle between the turret and the target and then multiply by Mathf.Rad2Deg to convert the radian value to degrees.
+                float convertToDegrees = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg; 
+
+                // Apply the calculated rotation to the Z axis of a new rotation vector.
+                Vector3 rotation = new Vector3(0, 0, convertToDegrees);
+
+                // Apply the new rotation to the pivot, allowing the barrel to rotate towards the target.
+                pivot.localRotation = Quaternion.Euler(rotation);
+            }
+        }
+    }
+}

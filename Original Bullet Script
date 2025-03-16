@@ -1,0 +1,17 @@
+public class Bullet : MonoBehaviour
+{
+    private void Start() // Destroys Bullet after 10 seconds if it doesn't hit something
+    {
+        Destroy(gameObject, 10f);
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision) // Destroy bullet when hit enemy
+    {
+        Destroy(gameObject);
+    }
+
+    private void Update()
+    {
+        transform.position += transform.right * 0.025f; // Speed of bullet
+    }
+}

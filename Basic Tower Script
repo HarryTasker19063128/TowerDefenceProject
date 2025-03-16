@@ -1,0 +1,22 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+public class BasicTower : Tower
+{
+    public Transform pivot;
+    public Transform barrel;
+    public GameObject bullet; //Reference to bullet object
+
+    protected override void shoot()
+    {
+        GameObject newBullet = Instantiate(bullet, barrel.position, pivot.rotation);
+        Bullet bulletScript = newBullet.GetComponent<Bullet>();
+
+        if (bulletScript != null)
+        {
+            bulletScript.damage = damage; // Pass tower's damage to the bullet script.
+        }
+    }
+}
